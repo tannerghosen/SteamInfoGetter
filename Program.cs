@@ -106,7 +106,7 @@ public static class SteamInfoGetter
                         }
                     }
                     double percent = Math.Round(((double)achsearned / achstotal) * 100);
-                    Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + "Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
+                    Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
                     Console.WriteLine();
                 }
                 catch
@@ -126,7 +126,8 @@ public static class SteamInfoGetter
     {
         SettingsInit();
         string command = "";
-        Console.WriteLine("Steam Info Getter");
+        Console.WriteLine("Steam User Data Getter");
+        Console.WriteLine("A program for getting your Steam-related data utilizing the Steam WebAPI");
         Console.WriteLine("Commands: settings, games, exit, help");
         Console.WriteLine();
         while (command != "exit")
@@ -153,7 +154,10 @@ public static class SteamInfoGetter
                     break;
                 case "":
                 case "help":
-                    Console.WriteLine("Commands:\nexit - exits program\nhelp - this command!\nsettings - used to alter the Steam WebAPI Key and Steam ID used for this program.\ngames - display general game data\n");
+                    Console.WriteLine("About:\nSteam User Data Getter is a program for getting various data involving your Steam account, mostly related to games you own." +
+                        "\nAs of this time, it supports:" +
+                        "\n* Steam Library Retrieval\n** Game Name\n** Playtime (in hours)\n** Achievements Earned (where applicable)" +
+                        "\n\nCommands:\nexit - exits program\nhelp - this command!\nsettings - used to alter the Steam WebAPI Key and Steam ID used for this program.\ngames - display general game data\n");
                     break;
                 case "exit":
                     Console.WriteLine("Exiting...");

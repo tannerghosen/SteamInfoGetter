@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamInfoGetter", "SteamInfoGetter.csproj", "{4242E2F3-59DA-43E9-B7F1-A1A03DFDA66F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SteamUserDataGetter", "SteamUserDataGetter.csproj", "{4242E2F3-59DA-43E9-B7F1-A1A03DFDA66F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
