@@ -89,6 +89,7 @@ public static class SteamInfoGetter
                 string name = game.GetProperty("name").GetString();
                 double playtime = Math.Round(game.GetProperty("playtime_forever").GetDouble() / 60, 2);
                 int appid = game.GetProperty("appid").GetInt32();
+                int achstotal = 0, achsearned = 0;
                 // We try - catch because not every game that shows up actually has achievements or stats or anything of that nature.
                 // Additionally, not every 'game' in a user's library is a valid game (some have no data other than an appid, and aren't even counted towards the game total (I believe?)).
                 try
@@ -96,7 +97,6 @@ public static class SteamInfoGetter
                     string rawachdata = await GetData($"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?appid={appid}&steamid={SteamID}&key={APIKey}");
                     JsonDocument achdata = JsonDocument.Parse(rawachdata);
                     JsonElement achievements = achdata.RootElement.GetProperty("playerstats").GetProperty("achievements");
-                    int achstotal = 0, achsearned = 0;
                     foreach (JsonElement achievement in achievements.EnumerateArray())
                     {
                         achstotal++;
