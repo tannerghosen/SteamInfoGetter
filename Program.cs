@@ -12,6 +12,7 @@ public static class SteamInfoGetter
         if (!File.Exists(Settings))
         {
             SaveSettings();
+            Console.WriteLine("First Time Use: Do make sure to utilize the 'settings' command to input your Steam WebAPI Key and SteamID, as these are required for the program to work.");
         }
         else
         {
@@ -22,8 +23,8 @@ public static class SteamInfoGetter
             SteamID = settings.RootElement.GetProperty("SteamID").GetInt64();
 
             GetOwnedGamesURL = $"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={APIKey}&steamid={SteamID}&format=json&include_appinfo=true&include_played_free_games=true";
-            //Console.WriteLine(APIKey + " " + SteamID);
-            //Console.WriteLine(GetOwnedGamesURL);
+
+            Console.WriteLine(GetOwnedGamesURL);
 
             settings.Dispose(); // end the Parse
         }
@@ -80,6 +81,7 @@ public static class SteamInfoGetter
         string rawdata = await GetData(GetOwnedGamesURL);
         if (rawdata != null)
         {
+            Console.WriteLine();
             JsonDocument data = JsonDocument.Parse(rawdata);
             JsonElement games = data.RootElement.GetProperty("response").GetProperty("games");
 
@@ -88,7 +90,8 @@ public static class SteamInfoGetter
                 string name = game.GetProperty("name").GetString();
                 double playtime = Math.Round(game.GetProperty("playtime_forever").GetDouble() / 60, 2);
                 int appid = game.GetProperty("appid").GetInt32();
-                //Console.WriteLine($"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?appid={appid}&steamid={SteamID}&key={APIKey}");
+                // We try - catch because not every game that shows up actually has achievements or stats or anything of that nature.
+                // Additionally, not every 'game' in a user's library is a valid game (some have no data other than an appid, and aren't even counted towards the game total (I believe?)).
                 try
                 {
                     string rawachdata = await GetData($"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?appid={appid}&steamid={SteamID}&key={APIKey}");
@@ -111,7 +114,6 @@ public static class SteamInfoGetter
                 {
                 }
             }
-            //Console.WriteLine(games);
             int gamestotal = data.RootElement.GetProperty("response").GetProperty("game_count").GetInt32();
             Console.WriteLine();
             Console.WriteLine("Games Total: " + gamestotal);
@@ -126,7 +128,7 @@ public static class SteamInfoGetter
         SettingsInit();
         string command = "";
         Console.WriteLine("Steam Info Getter");
-        Console.WriteLine("Commands: settings, games, exit");
+        Console.WriteLine("Commands: settings, games, exit, help");
         Console.WriteLine();
         while (command != "exit")
         {
@@ -148,6 +150,9 @@ public static class SteamInfoGetter
                     }
                     break;
                 case "":
+                case "help":
+                    Console.WriteLine("Commands:\nexit - exits program\nhelp - this command!\nsettings - used to alter the Steam WebAPI Key and Steam ID used for this program.\ngames - display general game data\n");
+                    break;
                 case "exit":
                     Console.WriteLine("Exiting...");
                     break;
