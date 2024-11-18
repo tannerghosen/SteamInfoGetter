@@ -7,12 +7,13 @@ public static class SteamInfoGetter
     private static long SteamID = 0;
     private static string GetOwnedGamesURL = "";
     private static readonly HttpClient hc = new HttpClient();
+
     public static void SettingsInit()
     {
         if (!File.Exists(Settings))
         {
             SaveSettings();
-            Console.WriteLine("First Time Use: Do make sure to utilize the 'settings' command to input your Steam WebAPI Key and SteamID, as these are required for the program to work.");
+            Console.WriteLine("First Time Use: Make sure to utilize the 'settings' command to input your Steam WebAPI Key and SteamID, as these are required for the program to work.");
         }
         else
         {
@@ -23,8 +24,6 @@ public static class SteamInfoGetter
             SteamID = settings.RootElement.GetProperty("SteamID").GetInt64();
 
             GetOwnedGamesURL = $"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={APIKey}&steamid={SteamID}&format=json&include_appinfo=true&include_played_free_games=true";
-
-            Console.WriteLine(GetOwnedGamesURL);
 
             settings.Dispose(); // end the Parse
         }
@@ -107,7 +106,7 @@ public static class SteamInfoGetter
                         }
                     }
                     double percent = Math.Round(((double)achsearned / achstotal) * 100);
-                    Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + "\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
+                    Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + "Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
                     Console.WriteLine();
                 }
                 catch
@@ -137,7 +136,10 @@ public static class SteamInfoGetter
             switch (command)
             {
                 case "games":
-                    await DisplayGames();
+                    if (!(APIKey == "" || SteamID == 0))
+                        await DisplayGames();
+                    else
+                        Console.WriteLine("Either the API Key is blank or the SteamID is still 0. Please alter these via the settings command before using the program.");
                     break;
                 case "settings":
                     Console.WriteLine("Enter setting: ");
