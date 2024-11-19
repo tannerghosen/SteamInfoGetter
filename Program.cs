@@ -13,7 +13,9 @@ public static class SteamInfoGetter
         if (!File.Exists(Settings))
         {
             SaveSettings();
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("First Time Use: Make sure to utilize the 'settings' command to input your Steam WebAPI Key and SteamID, as these are required for the program to work.");
+            Console.ForegroundColor = ConsoleColor.White;
         }
         else
         {
@@ -119,16 +121,27 @@ public static class SteamInfoGetter
         }
         else
         {
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("No data. Make sure your Steam ID and API Key are put in.");
+            Console.ForegroundColor = ConsoleColor.White;
         }
     }
     public static async Task Main(string[] args)
     {
         SettingsInit();
         string command = "";
-        Console.WriteLine("Steam User Data Getter");
-        Console.WriteLine("A program for getting your Steam-related data utilizing the Steam WebAPI");
+        Random random = new Random();
+        foreach (char c in "Steam User Data Getter")
+        {
+            ConsoleColor co  = (ConsoleColor)random.Next(0, 16);
+            Console.ForegroundColor = co;
+            Console.Write(c);
+        }
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.WriteLine("\nA program for getting your Steam-related data utilizing the Steam WebAPI");
+        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("Commands: settings, games, exit, help");
+        Console.ForegroundColor = ConsoleColor.White;
         Console.WriteLine();
         while (command != "exit")
         {
@@ -138,9 +151,15 @@ public static class SteamInfoGetter
             {
                 case "games":
                     if (!(APIKey == "" || SteamID == 0))
+                    {
                         await DisplayGames();
+                    }
                     else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Either the API Key is blank or the SteamID is still 0. Please alter these via the settings command before using the program.");
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
                     break;
                 case "settings":
                     Console.WriteLine("Enter setting: ");
@@ -149,18 +168,25 @@ public static class SteamInfoGetter
                     string value = Console.ReadLine();
                     if ((setting == "steamid" && int.TryParse(value, out int result)) || setting == "apikey")
                     {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("Updated setting " + setting + " to " + value);
+                        Console.ForegroundColor = ConsoleColor.White;
                         UpdateSettings(setting, value);
                     }
                     break;
                 case "":
                 case "help":
-                    Console.WriteLine("About:\nSteam User Data Getter is a program for getting various data involving your Steam account, mostly related to games you own." +
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("\nAbout:\nSteam User Data Getter is a program for getting various data involving your Steam account, mostly related to games you own." +
                         "\nAs of this time, it supports:" +
                         "\n* Steam Library Retrieval\n** Game Name\n** Playtime (in hours)\n** Achievements Earned (where applicable)" +
                         "\n\nCommands:\nexit - exits program\nhelp - this command!\nsettings - used to alter the Steam WebAPI Key and Steam ID used for this program.\ngames - display general game data\n");
+                    Console.ForegroundColor = ConsoleColor.White;
                     break;
                 case "exit":
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Exiting...");
+                    Console.ForegroundColor = ConsoleColor.White;
                     break;
             }
         }
