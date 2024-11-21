@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Net.Http;
-public static class SteamInfoGetter
+
+public static class SteamUserDataGetter
 {
     private static string Settings = "./settings.json";
     private static string APIKey = "";
@@ -46,6 +47,7 @@ public static class SteamInfoGetter
         }
         SaveSettings();
     }
+
     public static void SaveSettings()
     {
         // We write into our settings.json file a JSON object
@@ -61,6 +63,7 @@ public static class SteamInfoGetter
             writer.Close();
         }
     }
+
     public static async Task<string> GetData(string url)
     {
         try
@@ -85,11 +88,13 @@ public static class SteamInfoGetter
             Console.WriteLine();
             JsonDocument data = JsonDocument.Parse(rawdata);
             JsonElement games = data.RootElement.GetProperty("response").GetProperty("games");
-
+            int achievementsearnedtotal = 0, achievementstotal = 0, perfectgames = 0;
+            double playtimeoverall = 0;
             foreach (JsonElement game in games.EnumerateArray())
             {
                 string name = game.GetProperty("name").GetString();
                 double playtime = Math.Round(game.GetProperty("playtime_forever").GetDouble() / 60, 2);
+                playtimeoverall += playtime;
                 int appid = game.GetProperty("appid").GetInt32();
                 int achstotal = 0, achsearned = 0;
                 // We try - catch because not every game that shows up actually has achievements or stats or anything of that nature.
@@ -102,22 +107,37 @@ public static class SteamInfoGetter
                     foreach (JsonElement achievement in achievements.EnumerateArray())
                     {
                         achstotal++;
+                        achievementstotal++;
                         if (achievement.GetProperty("achieved").GetInt32() == 1)
                         {
                             achsearned++;
+                            achievementsearnedtotal++;
                         }
                     }
                     double percent = Math.Round(((double)achsearned / achstotal) * 100);
+
                     Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
+                    if (percent == 100)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine("Perfect Game!");
+                        Console.ForegroundColor = ConsoleColor.White;
+                        perfectgames++;
+                    }
                     Console.WriteLine();
                 }
-                catch
+                catch // as mentioned above, not every game has achievements!
                 {
+                    Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours");
+                    Console.WriteLine();
                 }
             }
             int gamestotal = data.RootElement.GetProperty("response").GetProperty("game_count").GetInt32();
             Console.WriteLine();
             Console.WriteLine("Games Total: " + gamestotal);
+            Console.WriteLine("Playtime Overall: " + Math.Round(playtimeoverall, 2) + " Hours");
+            Console.WriteLine("Achievements Earned / Total: " + achievementsearnedtotal + "/" + achievementstotal + " (" + Math.Round(((double)achievementsearnedtotal / achievementstotal) * 100) + "%)");
+            Console.WriteLine("Perfect Games: " + perfectgames);
         }
         else
         {
@@ -126,6 +146,15 @@ public static class SteamInfoGetter
             Console.ForegroundColor = ConsoleColor.White;
         }
     }
+
+    public static async Task DisplayAchievements() // Todo maybe
+    { 
+    }
+
+    public static async Task DisplayGameInventory() // Todo definitely
+    {
+    }
+
     public static async Task Main(string[] args)
     {
         SettingsInit();
