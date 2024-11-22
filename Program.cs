@@ -15,17 +15,18 @@ namespace SteamUserDataGetter
         {
             try
             {
-                var response = await hc.GetAsync("https://steamcommunity.com/");
+                var response = await hc.GetAsync("http://api.steampowered.com");
                 return response.IsSuccessStatusCode;
             }
             catch
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Either you are not connected to the internet or the Steam website is down. Double check the following:\n* Your network connections and if you are connected to them.\n* Try going to https://www.steamcommunity.com/ in your web browser and seeing if it loads. If not, the issue is not on your side.\n* Additionally, Valve tends to do maintance on Tuesday evenings. If that is the case, the issue is not on your side.\n");
+                Console.WriteLine("Either you are not connected to the internet or the Steam website is down. Double check the following:\n* Your network connections and if you are connected to them.\n* Try going to https://store.steampowered.com/ in your web browser and seeing if it loads. If not, the issue is not on your side.\n* Additionally, Valve tends to do maintance on Tuesday evenings. If that is the case, the issue is not on your side.\n");
                 Console.ForegroundColor = ConsoleColor.White;
                 return false;
             }
         }
+
         public static void SettingsInit()
         {
             if (!File.Exists(Settings))
