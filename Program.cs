@@ -11,20 +11,10 @@ namespace SteamUserDataGetter
         private static string GetOwnedGamesURL = "";
         private static readonly HttpClient hc = new HttpClient();
 
-        public static async Task<bool> IsInternetAvailable()
+        public static void Init()
         {
-            try
-            {
-                var response = await hc.GetAsync("http://api.steampowered.com");
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Either you are not connected to the internet or the Steam website is down. Double check the following:\n* Your network connections and if you are connected to them.\n* Try going to https://store.steampowered.com/ in your web browser and seeing if it loads. If not, the issue is not on your side.\n* Additionally, Valve tends to do maintance on Tuesday evenings. If that is the case, the issue is not on your side.\n");
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
+            hc.Timeout = TimeSpan.FromSeconds(10);
+            SettingsInit();
         }
 
         public static void SettingsInit()
@@ -82,6 +72,19 @@ namespace SteamUserDataGetter
             }
         }
 
+        public static async Task<bool> IsSteamAPIUp()
+        {
+            try
+            {
+                var response = await hc.GetAsync(GetOwnedGamesURL);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static async Task<string> GetData(string url)
         {
             try
@@ -98,84 +101,124 @@ namespace SteamUserDataGetter
             }
         }
 
-        public static async Task DisplayGames()
+        // called at the start of a command to ensure we can actually do stuff with it
+        public static async Task<bool> IsEverythingOK()
         {
-            string rawdata = await GetData(GetOwnedGamesURL);
-            if (rawdata != null)
+            if (await IsSteamAPIUp() == true)
             {
-                Console.WriteLine();
-                JsonDocument data = JsonDocument.Parse(rawdata);
-                JsonElement games = data.RootElement.GetProperty("response").GetProperty("games");
-                int achievementsearnedtotal = 0, achievementstotal = 0, perfectgames = 0;
-                double playtimeoverall = 0;
-                foreach (JsonElement game in games.EnumerateArray())
+                if ((APIKey == "" || SteamID == 0))
                 {
-                    string name = game.GetProperty("name").GetString();
-                    double playtime = Math.Round(game.GetProperty("playtime_forever").GetDouble() / 60, 2);
-                    playtimeoverall += playtime;
-                    int appid = game.GetProperty("appid").GetInt32();
-                    int achstotal = 0, achsearned = 0;
-                    // We try - catch because not every game that shows up actually has achievements or stats or anything of that nature.
-                    // Additionally, not every 'game' in a user's library is a valid game (some have no data other than an appid, and aren't even counted towards the game total (I believe?)).
-                    try
-                    {
-                        string rawachdata = await GetData($"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?appid={appid}&steamid={SteamID}&key={APIKey}");
-                        JsonDocument achdata = JsonDocument.Parse(rawachdata);
-                        JsonElement achievements = achdata.RootElement.GetProperty("playerstats").GetProperty("achievements");
-                        foreach (JsonElement achievement in achievements.EnumerateArray())
-                        {
-                            achstotal++;
-                            achievementstotal++;
-                            if (achievement.GetProperty("achieved").GetInt32() == 1)
-                            {
-                                achsearned++;
-                                achievementsearnedtotal++;
-                            }
-                        }
-                        double percent = Math.Round(((double)achsearned / achstotal) * 100);
-
-                        Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
-                        if (percent == 100)
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkYellow;
-                            Console.WriteLine("Perfect Game!");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            perfectgames++;
-                        }
-                        Console.WriteLine();
-                    }
-                    catch // as mentioned above, not every game has achievements!
-                    {
-                        Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours");
-                        Console.WriteLine();
-                    }
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Either the API Key or Steam ID are at their default settings. Please alter these via the settings command before using the program.");
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.White;
+                    return false;
                 }
-                int gamestotal = data.RootElement.GetProperty("response").GetProperty("game_count").GetInt32();
-                Console.WriteLine("Games Total: " + gamestotal);
-                Console.WriteLine("Playtime Overall: " + Math.Round(playtimeoverall, 2) + " Hours");
-                Console.WriteLine("Achievements Earned / Total: " + achievementsearnedtotal + "/" + achievementstotal + " (" + Math.Round(((double)achievementsearnedtotal / achievementstotal) * 100) + "%)");
-                Console.WriteLine("Perfect Games: " + perfectgames);
-                Console.WriteLine();
+                else
+                {
+                    return true;
+                }
             }
             else
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("No data. Make sure your Steam ID and API Key are put in.");
+                Console.WriteLine("Cannot connect to Steam API. Make sure your internet is on and that you can connect to the Steam website at https://www.steampowered.com .");
+                Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.White;
+                return false;
             }
         }
 
-        public static async Task DisplayAchievements() // Todo maybe
+        public static async Task Games()
         {
+            if (await IsEverythingOK() == true)
+            {
+                string rawdata = await GetData(GetOwnedGamesURL);
+                if (rawdata != null)
+                {
+                    Console.WriteLine();
+                    JsonDocument data = JsonDocument.Parse(rawdata);
+                    JsonElement games = data.RootElement.GetProperty("response").GetProperty("games");
+                    int achievementsearnedtotal = 0, achievementstotal = 0, perfectgames = 0;
+                    double playtimeoverall = 0;
+                    // for each element in games
+                    foreach (JsonElement game in games.EnumerateArray())
+                    {
+                        string name = game.GetProperty("name").GetString(); // game -> name
+                        double playtime = Math.Round(game.GetProperty("playtime_forever").GetDouble() / 60, 2);
+                        playtimeoverall += playtime;
+                        int appid = game.GetProperty("appid").GetInt32(); // game -> appid
+                        int achstotal = 0, achsearned = 0;
+                        // We try - catch because not every game that shows up actually has achievements or stats or anything of that nature.
+                        // Additionally, not every 'game' in a user's library is a valid game (some have no data other than an appid, and aren't even counted towards the game total (I believe?)).
+                        try
+                        {
+                            string rawachdata = await GetData($"https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?appid={appid}&steamid={SteamID}&key={APIKey}");
+                            JsonDocument achdata = JsonDocument.Parse(rawachdata);
+                            JsonElement achievements = achdata.RootElement.GetProperty("playerstats").GetProperty("achievements");
+                            // for each element in playerstats -> achievements
+                            foreach (JsonElement achievement in achievements.EnumerateArray())
+                            {
+                                achstotal++;
+                                achievementstotal++;
+                                if (achievement.GetProperty("achieved").GetInt32() == 1) // achievement -> achieved
+                                {
+                                    achsearned++;
+                                    achievementsearnedtotal++;
+                                }
+                            }
+                            double percent = Math.Round(((double)achsearned / achstotal) * 100);
+
+                            Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours\nAchievements: " + achsearned + "/" + achstotal + " (" + percent + "%)");
+                            if (percent == 100)
+                            {
+                                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                                Console.WriteLine("Perfect Game!");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                perfectgames++;
+                            }
+                            Console.WriteLine();
+                        }
+                        catch // as mentioned above, not every game has achievements!
+                        {
+                            Console.WriteLine("Game: " + name + "\nPlaytime: " + playtime + " Hours");
+                            Console.WriteLine();
+                        }
+                    }
+                    int gamestotal = data.RootElement.GetProperty("response").GetProperty("game_count").GetInt32();
+                    Console.WriteLine("Games Total: " + gamestotal);
+                    Console.WriteLine("Playtime Overall: " + Math.Round(playtimeoverall, 2) + " Hours");
+                    Console.WriteLine("Achievements Earned / Total: " + achievementsearnedtotal + "/" + achievementstotal + " (" + Math.Round(((double)achievementsearnedtotal / achievementstotal) * 100) + "%)");
+                    Console.WriteLine("Perfect Games: " + perfectgames);
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("No data.");
+                    Console.WriteLine();
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            }
         }
 
-        public static async Task DisplayGameInventory() // Todo definitely
+        public static async Task Achievements() // Todo maybe
         {
+            if (await IsEverythingOK() == true)
+            {
+            }
+        }
+        
+        public static async Task Inventory() // Todo maybe???
+        {
+            if (await IsEverythingOK() == true)
+            {
+            }
         }
 
         public static async Task Main(string[] args)
         {
-            SettingsInit();
+            Init();
             string command = "";
             Random random = new Random();
             foreach (char c in "Steam User Data Getter")
@@ -197,29 +240,20 @@ namespace SteamUserDataGetter
                 switch (command)
                 {
                     case "games":
-                        if (await IsInternetAvailable() == true)
-                        {
-                            if (!(APIKey == "" || SteamID == 0))
-                            {
-                                await DisplayGames();
-                            }
-                            else
-                            {
-                                Console.ForegroundColor = ConsoleColor.Red;
-                                Console.WriteLine("Either the API Key is blank or the SteamID is still 0. Please alter these via the settings command before using the program.");
-                                Console.ForegroundColor = ConsoleColor.White;
-                            }
-                        }
-                        break;
-                    case "inventory":
+                        await Games();
                         break;
                     case "achievements":
+                        await Achievements();
+                        break;
+                    case "inventory":
+                        await Inventory();
                         break;
                     case "settings":
                         Console.WriteLine("Enter setting: ");
                         string setting = Console.ReadLine();
                         Console.WriteLine("Enter value: ");
                         string value = Console.ReadLine();
+                        // if setting is steam id and it's an integer OR if setting is apikey
                         if ((setting == "steamid" && int.TryParse(value, out int result)) || setting == "apikey")
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
@@ -229,6 +263,7 @@ namespace SteamUserDataGetter
                         }
                         break;
                     case "":
+                    case null:
                     case "help":
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("\nAbout:\nSteam User Data Getter is a program for getting various data involving your Steam account, mostly related to games you own." +
